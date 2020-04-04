@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Chat</title>
+    <script src="/socket.io/socket.io.js"></script> <!-- 1 -->
+    <script src="//code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var square="square";
+      var joinedRoom=null;
+      var socket=io("http://localhost:3000?aaa=123");
+      //spring에서 쓰기위에선 io(http://localhost:3000)
+      socket.on('connect',()=>{
+        console.log("서버와 연결");
+        makeJoin(square);
+        $('#status').text("connected="+joinedRoom);
+        displayrooms();
+      });
+    </script>
+    <style>
+      .red{
+      color:red;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Chat Client</h1>
+    <div id="rooms">
+    </div>
+      <div>
+        <input type="text" id="roomid" value="">
+        <button onclick="joinRoom()">Join</button>
+      </div>
+    <strong id="myid" class="red"></strong>
+    <div id="status" class="red">
+
+    </div>
+    <div id="list">
+
+    </div>
+    <div>
+      <input type="text" id="msg" value="hi">
+      <button onclick="send()" id="btnSend">Send</button>
+    </div>
+    <script>
+
+      socket.on('message',(data)=>{
+          let msg=data.msg;
+          let id=msg.substring(7);
+          $('#myid').text(id);
+          console.log(id);
+        });
+      socket.on('disconnect',()=>{
+        console.log("서버 끊김");
+            $('#status').text("distconect");
+      });
+      function send(){
+        let msg=$('#msg').val();
+        socket.emit("message",{room:joinedRoom,msg:msg},(ret)=>{
+          console.log("message.callback>>",ret);
+        });
+      }
+      function joinRoom(){
+        let roomid=$('input#roomid').val();
+        if(!roomid){
+          alert('Input the room-id to join!!');
+          return;
+        }
+        makeJoin(roomid);
+      }
+      function makeJoin(roomid){
+        socket.emit('join',roomid,()=>{
+          socket.emit('leave',joinedRoom);
+          joinedRoom=roomid;
+          displayrooms();
+        });
+      }
+      function displayrooms(){
+        socket.emit('rooms',(rooms)=>{
+          console.log("rooms>>",rooms);
+          $('#rooms').text(rooms);
+        });
+      }
+
+    </script>
+  </body>
+</html>
